@@ -9,12 +9,6 @@ on:
       - 'k8s/**'
       - 'README.md'
 
-env:
-  DH_USER: your-dockerhub-username
-  GIT_EMAIL: me@gmail.com
-  GIT_NAME: Hesch
-  IMAGE_NAME: go-web-app
-
 jobs:
 
   build:
@@ -24,13 +18,13 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Set up Go 1.22
+    - name: Set up Go
       uses: actions/setup-go@v2
       with:
-        go-version: 1.22
+        go-version: 1.24.2
 
     - name: Build
-      run: go build -o ${{ env.IMAGE_NAME }}
+      run: go build -o ${{ vars.IMAGE_NAME }}
 
     - name: Test
       run: go test ./...
@@ -45,7 +39,7 @@ jobs:
     - name: Run golangci-lint
       uses: golangci/golangci-lint-action@v6
       with:
-        version: v1.56.2
+        version: nightly
 
   push:
     runs-on: ubuntu-latest
@@ -62,7 +56,7 @@ jobs:
     - name: Login to DockerHub
       uses: docker/login-action@v3
       with:
-        username: ${{ env.DH_USER }}
+        username: ${{ vars.DH_USER }}
         password: ${{ secrets.DH_TOKEN }}
 
     - name: Build and Push Docker image
@@ -72,9 +66,9 @@ jobs:
         file: ./Dockerfile
         push: true
         tags: |
-          ${{ env.DH_USER }}/${{ env.IMAGE_NAME }}:${{ github.run_id }}
-          ${{ env.DH_USER }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          ${{ env.DH_USER }}/${{ env.IMAGE_NAME }}:latest
+          ${{ vars.DH_USER }}/${{ vars.IMAGE_NAME }}:${{ github.run_id }}
+          ${{ vars.DH_USER }}/${{ vars.IMAGE_NAME }}:${{ github.sha }}
+          ${{ vars.DH_USER }}/${{ vars.IMAGE_NAME }}:latest
 
   update-newtag-in-helm-chart:
     runs-on: ubuntu-latest
@@ -93,8 +87,8 @@ jobs:
 
     - name: Commit and push changes
       run: |
-        git config --global user.email "${{ env.GIT_EMAIL }}"
-        git config --global user.name "${{ env.GIT_NAME }}"
+        git config --global user.email "${{ vars.GIT_EMAIL }}"
+        git config --global user.name "${{ vars.GIT_NAME }}"
         git add helm/go-web-app-chart/values.yaml
         git commit -m "Update tag in Helm chart"
         git push
